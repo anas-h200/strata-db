@@ -25,6 +25,14 @@ public class WriteAheadLog {
         fos.getFD().sync();
     }
 
+    void appendDelete(String key) throws IOException {
+        dos.writeByte(DELETE);
+        dos.writeUTF(key);
+
+        dos.flush();
+        fos.getFD().sync();
+    }
+
     void close() throws IOException {
         dos.close();
     }
