@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -50,6 +51,23 @@ public class WriteAheadLogTest {
             assertEquals(1, type);
             assertEquals("ravi", key);
             assertEquals("98xxx", value);
+        }
+    }
+
+    @Test
+    void readingPastLastRecordThrowsEndOfFile(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.close();
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
+            in.readByte();
+            in.readUTF();
+            in.readUTF();
+
+            assertThrows(EOFException.class, () -> in.readByte());
         }
     }
 }
