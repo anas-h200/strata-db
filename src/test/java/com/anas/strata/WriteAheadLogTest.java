@@ -19,4 +19,15 @@ public class WriteAheadLogTest {
         assertTrue(Files.exists(logPath));
         assertTrue(Files.size(logPath) > 0);
     }
+
+    @Test
+    void appendDeleteWrites(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendDelete("ravi");
+        wal.close();
+
+        assertEquals(7L, Files.size(logPath));
+    }
 }
