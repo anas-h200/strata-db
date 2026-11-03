@@ -5,9 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class WriteAheadLog {
-    private static final byte PUT = 1;
-    private static final byte DELETE = 2;
-
     private final FileOutputStream fos;
     private final DataOutputStream dos;
 
@@ -17,7 +14,7 @@ public class WriteAheadLog {
     }
 
     void appendPut(String key, String value) throws IOException {
-        dos.writeByte(PUT);
+        dos.writeByte(LogRecord.PUT);
         dos.writeUTF(key);
         dos.writeUTF(value);
 
@@ -26,7 +23,7 @@ public class WriteAheadLog {
     }
 
     void appendDelete(String key) throws IOException {
-        dos.writeByte(DELETE);
+        dos.writeByte(LogRecord.DELETE);
         dos.writeUTF(key);
 
         dos.flush();
