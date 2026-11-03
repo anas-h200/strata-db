@@ -70,4 +70,17 @@ public class WriteAheadLogTest {
             assertThrows(EOFException.class, () -> in.readByte());
         }
     }
+
+    @Test
+    void readNextReturnsNullOnEmptyFile(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        Files.createFile(logPath);
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
+            LogRecord log = WriteAheadLog.readNext(in);
+
+            assertNull(log);
+        }
+    }
 }

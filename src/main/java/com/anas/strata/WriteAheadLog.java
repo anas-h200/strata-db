@@ -1,8 +1,6 @@
 package com.anas.strata;
 
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class WriteAheadLog {
     private final FileOutputStream fos;
@@ -32,5 +30,15 @@ public class WriteAheadLog {
 
     void close() throws IOException {
         dos.close();
+    }
+
+    static LogRecord readNext(DataInputStream in) throws IOException {
+        try {
+            byte type = in.readByte();
+        } catch(EOFException e) {
+            return null;
+        }
+
+        return null;
     }
 }
