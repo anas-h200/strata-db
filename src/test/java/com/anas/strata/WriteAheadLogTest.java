@@ -100,4 +100,21 @@ public class WriteAheadLogTest {
             assertEquals("98xxx", record.value());
         }
     }
+
+    @Test
+    void readNextReturnsDeleteRecord(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendDelete("ravi");
+        wal.close();
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
+            LogRecord record = WriteAheadLog.readNext(in);
+
+            assertEquals(LogRecord.DELETE, record.type());
+            assertEquals("ravi", record.key());
+            assertNull(record.value());
+        }
+    }
 }

@@ -46,6 +46,11 @@ public class WriteAheadLog {
 
             return new LogRecord(type, key, value);
         }
+        else if (type == LogRecord.DELETE) {
+            String key = in.readUTF();
+
+            return new LogRecord(type, key, null);
+        }
 
         return null;
     }
