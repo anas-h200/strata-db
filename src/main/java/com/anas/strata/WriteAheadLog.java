@@ -1,6 +1,8 @@
 package com.anas.strata;
 
 import java.io.*;
+import java.util.List;
+import java.util.ArrayList;
 
 public class WriteAheadLog {
     private final FileOutputStream fos;
@@ -53,5 +55,24 @@ public class WriteAheadLog {
         }
 
         throw new IOException("LogRecord contains an unknown byte type: type " + type + ".");
+    }
+
+    static List<LogRecord> readAll(String path) throws IOException {
+        List<LogRecord> logRecords = new ArrayList<>();
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(path))) {
+            while (true) {
+                LogRecord record = readNext(in);
+
+                if (record != null) {
+                    logRecords.add(record);
+                }
+                else {
+                    break;
+                }
+            }
+        }
+
+        return logRecords;
     }
 }

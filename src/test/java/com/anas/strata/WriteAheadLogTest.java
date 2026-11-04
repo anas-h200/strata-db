@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -147,5 +148,35 @@ public class WriteAheadLogTest {
         try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
             assertThrows(EOFException.class, () -> WriteAheadLog.readNext(in));
         }
+    }
+
+    @Test
+    void readAllReturnsRecordsInOrder(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.appendDelete("ravi");
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        List<LogRecord> results = WriteAheadLog.readAll(logPath.toString());
+
+        assertEquals(3, results.size());
+
+        LogRecord first = results.get(0);
+        assertEquals(LogRecord.PUT, first.type());
+        assertEquals("ravi", first.key());
+        assertEquals("98xxx", first.value());
+
+        LogRecord second = results.get(1);
+        assertEquals(LogRecord.DELETE, second.type());
+        assertEquals("ravi", second.key());
+        assertNull(second.value());
+
+        LogRecord third = results.get(2);
+        assertEquals(LogRecord.PUT, third.type());
+        assertEquals("sam", third.key());
+        assertEquals("11xxx", third.value());
     }
 }
