@@ -61,15 +61,20 @@ public class WriteAheadLog {
         List<LogRecord> logRecords = new ArrayList<>();
 
         try (DataInputStream in = new DataInputStream(new FileInputStream(path))) {
-            while (true) {
-                LogRecord record = readNext(in);
+            try {
+                while (true) {
+                    LogRecord record = readNext(in);
 
-                if (record != null) {
+                    if (record == null) {
+                        break;
+                    }
+
                     logRecords.add(record);
                 }
-                else {
-                    break;
-                }
+            } catch (EOFException e) {
+                // The last record was cut off by a crash before it was fully
+                // written, so the caller was never told it succeeded.
+                // Stop here and keep the complete records already collected.
             }
         }
 

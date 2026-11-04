@@ -179,4 +179,36 @@ public class WriteAheadLogTest {
         assertEquals("sam", third.key());
         assertEquals("11xxx", third.value());
     }
+
+    @Test
+    void readAllStopsAtCutoffRecord(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.appendDelete("ravi");
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        byte []bytes = Files.readAllBytes(logPath);
+        byte []cutLastByte = Arrays.copyOf(bytes, bytes.length - 1);
+
+        Files.write(logPath, cutLastByte);
+
+        List<LogRecord> results = WriteAheadLog.readAll(logPath.toString());
+
+        assertEquals(2, results.size());
+
+        LogRecord first = results.get(0);
+        assertEquals(LogRecord.PUT, first.type());
+        assertEquals("ravi", first.key());
+        assertEquals("98xxx", first.value());
+
+        LogRecord second = results.get(1);
+        assertEquals(LogRecord.DELETE, second.type());
+        assertEquals("ravi", second.key());
+        assertNull(second.value());
+    }
 }
+
+
