@@ -9,6 +9,8 @@ import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.io.IOException;
+import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class WriteAheadLogTest {
@@ -126,6 +128,24 @@ public class WriteAheadLogTest {
 
         try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
             assertThrows(IOException.class, () -> WriteAheadLog.readNext(in));
+        }
+    }
+
+    @Test
+    void readNextOnCutoffRecord(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.close();
+
+        byte []bytes = Files.readAllBytes(logPath);
+        byte []cutBytes = Arrays.copyOf(bytes, 8);
+
+        Files.write(logPath, cutBytes);
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
+            assertThrows(EOFException.class, () -> WriteAheadLog.readNext(in));
         }
     }
 }
