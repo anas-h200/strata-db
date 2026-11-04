@@ -52,6 +52,6 @@ public class WriteAheadLog {
             return new LogRecord(type, key, null);
         }
 
-        return null;
+        throw new IOException("LogRecord contains an unknown byte type: type " + type + ".");
     }
 }

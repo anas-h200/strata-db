@@ -117,4 +117,15 @@ public class WriteAheadLogTest {
             assertNull(record.value());
         }
     }
+
+    @Test
+    void readNextThrowsOnUnknownType(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        Files.write(logPath, new byte[] { 7 });
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(logPath.toString()))) {
+            assertThrows(IOException.class, () -> WriteAheadLog.readNext(in));
+        }
+    }
 }
