@@ -33,10 +33,18 @@ public class WriteAheadLog {
     }
 
     static LogRecord readNext(DataInputStream in) throws IOException {
+        byte type;
         try {
-            byte type = in.readByte();
+            type = in.readByte();
         } catch(EOFException e) {
             return null;
+        }
+
+        if (type == LogRecord.PUT) {
+            String key = in.readUTF();
+            String value = in.readUTF();
+
+            return new LogRecord(type, key, value);
         }
 
         return null;
