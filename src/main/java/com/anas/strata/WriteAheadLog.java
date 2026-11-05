@@ -1,6 +1,9 @@
 package com.anas.strata;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -107,5 +110,11 @@ public class WriteAheadLog {
         }
 
         return new ReadResult(logRecords, validLength);
+    }
+
+    static void truncate(String path, long length) throws IOException {
+        try (FileChannel channel = FileChannel.open(Path.of(path), StandardOpenOption.WRITE)) {
+            channel.truncate(length);
+        }
     }
 }

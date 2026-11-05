@@ -245,6 +245,31 @@ public class WriteAheadLogTest {
 
         assertEquals(Files.size(logPath), results.validLength());
     }
+
+    @Test
+    void truncateRemovesBytesAfterLength(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.appendDelete("ravi");
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        byte []bytes = Files.readAllBytes(logPath);
+        byte []cutLastByte = Arrays.copyOf(bytes, bytes.length - 1);
+
+        Files.write(logPath, cutLastByte);
+
+        ReadResult results = WriteAheadLog.readAllWithLength(logPath.toString());
+
+        assertNotEquals(results.validLength(), Files.size(logPath));
+
+        WriteAheadLog.truncate(logPath.toString(), results.validLength());
+
+        assertEquals(21L, Files.size(logPath));   // here 21 comes from (14 for PUT, 7 for DELETE)
+    }
+
 }
 
 
