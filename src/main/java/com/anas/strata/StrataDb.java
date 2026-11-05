@@ -25,6 +25,11 @@ public class StrataDb {
         memTable.put(key, value);
     }
 
+    void delete(String key) throws IOException {
+        wal.appendDelete(key);
+        memTable.delete(key);
+    }
+
     String get(String key) {
         return memTable.get(key);
     }
