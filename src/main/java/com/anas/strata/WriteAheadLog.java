@@ -80,4 +80,32 @@ public class WriteAheadLog {
 
         return logRecords;
     }
+
+    static ReadResult readAllWithLength(String path) throws IOException {
+        List<LogRecord> logRecords = new ArrayList<>();
+        long validLength = 0;
+
+        try (FileInputStream fis = new FileInputStream(path);
+             DataInputStream in = new DataInputStream(fis)) {
+
+            try {
+                while (true) {
+                    LogRecord record = readNext(in);
+
+                    if (record == null) {
+                        break;
+                    }
+
+                    logRecords.add(record);
+                    validLength = fis.getChannel().position();
+                }
+            } catch (EOFException e) {
+                // The last record was cut off by a crash before it was fully
+                // written, so the caller was never told it succeeded.
+                // Stop here and keep the complete records already collected.
+            }
+        }
+
+        return new ReadResult(logRecords, validLength);
+    }
 }

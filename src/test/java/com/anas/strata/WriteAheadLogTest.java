@@ -209,6 +209,42 @@ public class WriteAheadLogTest {
         assertEquals("ravi", second.key());
         assertNull(second.value());
     }
+
+    @Test
+    void readAllWithLengthStopsBeforeTornRecord(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.appendDelete("ravi");
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        byte []bytes = Files.readAllBytes(logPath);
+        byte []cutLastByte = Arrays.copyOf(bytes, bytes.length - 1);
+
+        Files.write(logPath, cutLastByte);
+
+        ReadResult results = WriteAheadLog.readAllWithLength(logPath.toString());
+
+        assertEquals(2, results.records().size());
+        assertEquals(21L, results.validLength()); // here 21 comes from (14 for PUT, 7 for DELETE)
+    }
+
+    @Test
+    void readAllWithLengthEqualsFileSizeForCleanLog(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.appendDelete("ravi");
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        ReadResult results = WriteAheadLog.readAllWithLength(logPath.toString());
+
+        assertEquals(Files.size(logPath), results.validLength());
+    }
 }
 
 
