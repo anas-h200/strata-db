@@ -93,4 +93,19 @@ public class StrataDbTest {
 
         thirdStrataDb.close();
     }
+
+    @Test
+    void flushWritesMemTableToSSTable(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("ravi", "98xxx");
+        db.put("sam", "11xxx");
+        db.delete("sam");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db.flush(sstPath);
+        db.close();
+
+        assertEquals(new MemTable.ValueEntry("98xxx", false), SSTableReader.get(sstPath, "ravi"));
+        assertEquals(new MemTable.ValueEntry(null, true), SSTableReader.get(sstPath, "sam"));
+    }
 }

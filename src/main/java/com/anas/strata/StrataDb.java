@@ -38,4 +38,8 @@ public class StrataDb {
     void close() throws IOException {
         wal.close();
     }
+
+    void flush (String sstPath) throws IOException {
+        SSTableWriter.write(sstPath, memTable);
+    }
 }
