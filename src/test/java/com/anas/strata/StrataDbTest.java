@@ -126,4 +126,26 @@ public class StrataDbTest {
 
         db.close();
     }
+
+    @Test
+    void getSearchesNewestSSTableFirst(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+
+        db.put("ravi", "98xxx");
+        db.put("sam", "11xxx");
+        db.put("bob", "55xxx");
+        db.flush(tempDir.resolve("sstable-1.sst").toString());
+
+        db.put("ravi", "99yyy");
+        db.delete("sam");
+        db.put("asha", "77xxx");
+        db.flush(tempDir.resolve("sstable-2.sst").toString());
+
+        assertEquals("99yyy", db.get("ravi"));
+        assertThrows(ResourceNotFoundException.class, () -> db.get("sam"));
+        assertEquals("55xxx", db.get("bob"));
+        assertEquals("77xxx", db.get("asha"));
+
+        db.close();
+    }
 }

@@ -3,12 +3,13 @@ package com.anas.strata;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class StrataDb {
     private final MemTable memTable;
     private final WriteAheadLog wal;
-    private String sstPath;
+    private final List<String> sstPaths = new ArrayList<>();
 
     StrataDb(String path) throws IOException {
         this.memTable = new MemTable();
@@ -35,8 +36,13 @@ public class StrataDb {
     String get(String key) throws IOException {
         MemTable.ValueEntry entry = memTable.lookup(key);
 
-        if (entry == null && sstPath != null) {
-            entry = SSTableReader.get(sstPath, key);
+        if (entry == null) {
+            for (String path: sstPaths) {
+                entry = SSTableReader.get(path, key);
+                if (entry != null) {
+                    break;
+                }
+            }
         }
 
         if (entry == null || entry.deleted()) {
@@ -52,7 +58,7 @@ public class StrataDb {
 
     void flush (String sstPath) throws IOException {
         SSTableWriter.write(sstPath, memTable);
-        this.sstPath = sstPath;
+        sstPaths.add(0, sstPath);
         memTable.clear();
     }
 }
