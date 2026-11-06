@@ -108,4 +108,22 @@ public class StrataDbTest {
         assertEquals(new MemTable.ValueEntry("98xxx", false), SSTableReader.get(sstPath, "ravi"));
         assertEquals(new MemTable.ValueEntry(null, true), SSTableReader.get(sstPath, "sam"));
     }
+
+    @Test
+    void getReadsFromSSTableAfterFlushAndRespectsTombstones(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("ravi", "98xxx");
+        db.put("sam", "11xxx");
+        db.flush(tempDir.resolve("sstable-1.sst").toString());
+
+        assertEquals("98xxx", db.get("ravi"));
+
+        db.delete("ravi");
+        assertThrows(ResourceNotFoundException.class, () -> db.get("ravi"));
+
+        assertEquals("11xxx", db.get("sam"));
+        assertThrows(ResourceNotFoundException.class, () -> db.get("bob"));
+
+        db.close();
+    }
 }

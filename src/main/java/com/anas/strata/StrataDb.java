@@ -8,6 +8,7 @@ import java.util.List;
 public class StrataDb {
     private final MemTable memTable;
     private final WriteAheadLog wal;
+    private String sstPath;
 
     StrataDb(String path) throws IOException {
         this.memTable = new MemTable();
@@ -31,8 +32,18 @@ public class StrataDb {
         memTable.delete(key);
     }
 
-    String get(String key) {
-        return memTable.get(key);
+    String get(String key) throws IOException {
+        MemTable.ValueEntry entry = memTable.lookup(key);
+
+        if (entry == null && sstPath != null) {
+            entry = SSTableReader.get(sstPath, key);
+        }
+
+        if (entry == null || entry.deleted()) {
+            throw new ResourceNotFoundException("This key is not present in the db.");
+        }
+
+        return entry.value();
     }
 
     void close() throws IOException {
@@ -41,5 +52,7 @@ public class StrataDb {
 
     void flush (String sstPath) throws IOException {
         SSTableWriter.write(sstPath, memTable);
+        this.sstPath = sstPath;
+        memTable.clear();
     }
 }
