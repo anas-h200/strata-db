@@ -1,8 +1,9 @@
 package com.anas.strata;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.Map;
 
 public class MemTable {
-    private record ValueEntry(String value, boolean deleted) {}
+    record ValueEntry(String value, boolean deleted) {}
 
     private final ConcurrentSkipListMap<String, ValueEntry> map = new ConcurrentSkipListMap<>();
 
@@ -26,4 +27,6 @@ public class MemTable {
     public int size() {
         return map.size();
     }
+
+    public Iterable<Map.Entry<String, ValueEntry>> entries () { return map.entrySet(); }
 }

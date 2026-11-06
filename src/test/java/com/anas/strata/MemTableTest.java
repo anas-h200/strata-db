@@ -1,6 +1,10 @@
 package com.anas.strata;
 
 import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MemTableTest {
@@ -26,5 +30,28 @@ public class MemTableTest {
         MemTable table = new MemTable();
 
         assertThrows(ResourceNotFoundException.class, () -> table.get("Nobody"));
+    }
+
+    @Test
+    void entriesAreSortedAndIncludeTombstones() {
+        MemTable table = new MemTable();
+        table.put("sam", "11xxx");
+        table.put("ravi", "98xxx");
+        table.put("asha", "77xxx");
+        table.delete("ravi");
+
+        List<String> keys = new ArrayList<>();
+        boolean raviDeleted = false;
+
+        for (Map.Entry<String, MemTable.ValueEntry> entry: table.entries()) {
+            keys.add(entry.getKey());
+
+            if (entry.getKey().equals("ravi")) {
+                raviDeleted = entry.getValue().deleted();
+            }
+        }
+
+        assertEquals(List.of("asha", "ravi", "sam"), keys);
+        assertTrue(raviDeleted);
     }
 }
