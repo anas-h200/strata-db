@@ -13,8 +13,9 @@ public class StrataDb {
         this.memTable = new MemTable();
 
         if (Files.exists(Path.of(path))) {
-            List<LogRecord> records = WriteAheadLog.readAll(path);
-            Recovery.replay(records, this.memTable);
+            ReadResult results = WriteAheadLog.readAllWithLength(path);
+            Recovery.replay(results.records(), this.memTable);
+            WriteAheadLog.truncate(path, results.validLength());
         }
 
         this.wal = new WriteAheadLog(path);
