@@ -29,4 +29,8 @@ public class MemTable {
     }
 
     public Iterable<Map.Entry<String, ValueEntry>> entries () { return map.entrySet(); }
+
+    ValueEntry lookup(String key) {
+        return map.get(key);
+    }
 }

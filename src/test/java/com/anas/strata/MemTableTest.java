@@ -54,4 +54,16 @@ public class MemTableTest {
         assertEquals(List.of("asha", "ravi", "sam"), keys);
         assertTrue(raviDeleted);
     }
+
+    @Test
+    void lookupDistinguishesValueTombstoneAndMissing() {
+        MemTable memTable = new MemTable();
+        memTable.put("asha", "77xxx");
+        memTable.put("ravi", "98xxx");
+        memTable.delete("ravi");
+
+        assertEquals(new MemTable.ValueEntry("77xxx", false), memTable.lookup("asha"));
+        assertEquals(new MemTable.ValueEntry(null, true), memTable.lookup("ravi"));
+        assertNull(memTable.lookup("bob"));
+    }
 }
