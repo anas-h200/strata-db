@@ -33,4 +33,8 @@ public class MemTable {
     ValueEntry lookup(String key) {
         return map.get(key);
     }
+
+    void clear () {
+        map.clear();
+    }
 }

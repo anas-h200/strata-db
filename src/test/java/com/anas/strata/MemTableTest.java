@@ -66,4 +66,18 @@ public class MemTableTest {
         assertEquals(new MemTable.ValueEntry(null, true), memTable.lookup("ravi"));
         assertNull(memTable.lookup("bob"));
     }
+
+    @Test
+    void clearRemovesAllEntriesIncludingTombstones() {
+        MemTable memTable = new MemTable();
+        memTable.put("asha", "77xxx");
+        memTable.put("ravi", "98xxx");
+        memTable.delete("ravi");
+
+        memTable.clear();
+
+        assertEquals(0, memTable.size());
+        assertNull(memTable.lookup("asha"));
+        assertNull(memTable.lookup("ravi"));
+    }
 }
