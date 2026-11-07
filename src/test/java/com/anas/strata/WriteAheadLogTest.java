@@ -270,6 +270,24 @@ public class WriteAheadLogTest {
         assertEquals(21L, Files.size(logPath));   // here 21 comes from (14 for PUT, 7 for DELETE)
     }
 
+    @Test
+    void resetEmptiesLogAndLaterAppendsStillWork(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        WriteAheadLog wal = new WriteAheadLog(logPath.toString());
+        wal.appendPut("ravi", "98xxx");
+        wal.reset();
+
+        assertEquals(0, Files.size(logPath));
+
+        wal.appendPut("sam", "11xxx");
+        wal.close();
+
+        List<LogRecord> records = WriteAheadLog.readAll(logPath.toString());
+        assertEquals(1, records.size());
+        assertEquals("sam", records.get(0).key());
+    }
+
 }
 
 
