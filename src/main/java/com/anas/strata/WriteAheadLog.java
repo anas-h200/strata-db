@@ -37,6 +37,13 @@ public class WriteAheadLog {
         dos.close();
     }
 
+    void reset() throws IOException {
+        dos.flush();
+        fos.getChannel().truncate(0);
+        fos.getFD().sync();
+
+    }
+
     static LogRecord readNext(DataInputStream in) throws IOException {
         byte type;
         try {
