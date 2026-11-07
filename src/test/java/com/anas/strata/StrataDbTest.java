@@ -167,4 +167,23 @@ public class StrataDbTest {
 
         secondStrataDb.close();
     }
+
+    @Test
+    void flushClearsWalAndDataSurvivesRestart(@TempDir Path tempDir) throws IOException {
+        Path walPath = tempDir.resolve("wal.log");
+
+        StrataDb first = new StrataDb(walPath.toString());
+        first.put("ravi", "98xxx");
+        first.flush(tempDir.resolve("sstable-1.sst").toString());
+
+        assertEquals(0, Files.size(walPath));
+
+        first.put("sam", "11xxx");
+        first.close();
+
+        StrataDb second = new StrataDb(walPath.toString());
+        assertEquals("98xxx", second.get("ravi"));
+        assertEquals("11xxx", second.get("sam"));
+        second.close();
+    }
 }

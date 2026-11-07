@@ -62,6 +62,7 @@ public class StrataDb {
         SSTableWriter.write(sstPath, memTable);
         sstPaths.add(0, sstPath);
         memTable.clear();
+        wal.reset();
     }
 
     private static int ssTableNumber(Path p) {
