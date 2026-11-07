@@ -148,4 +148,23 @@ public class StrataDbTest {
 
         db.close();
     }
+
+    @Test
+    void sstablesAreFoundAgainAfterRestart(@TempDir Path tempDir) throws IOException {
+        Path logPath = tempDir.resolve("wal.log");
+
+        StrataDb firstStrataDb = new StrataDb(logPath.toString());
+        firstStrataDb.put("ravi", "98xxx");
+        firstStrataDb.flush(tempDir.resolve("sstable-1.sst").toString());
+        firstStrataDb.put("ravi", "99yyy");
+        firstStrataDb.flush(tempDir.resolve("sstable-2.sst").toString());
+        firstStrataDb.close();
+
+        Files.delete(logPath);
+
+        StrataDb secondStrataDb = new StrataDb(logPath.toString());
+        assertEquals("99yyy", secondStrataDb.get("ravi"));
+
+        secondStrataDb.close();
+    }
 }
