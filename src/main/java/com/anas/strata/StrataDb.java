@@ -13,8 +13,10 @@ public class StrataDb {
     private final List<String> sstPaths = new ArrayList<>();
     private final Path dir;
     private int nextSstNumber = 1;
+    private final int flushThreshold;
 
-    StrataDb(String path) throws IOException {
+    StrataDb(String path, int flushThreshold) throws IOException {
+        this.flushThreshold = flushThreshold;
         this.memTable = new MemTable();
         this.dir = Path.of(path).toAbsolutePath().getParent();
         loadSSTables(Path.of(path));
@@ -28,14 +30,26 @@ public class StrataDb {
         this.wal = new WriteAheadLog(path);
     }
 
+    StrataDb(String path) throws IOException {
+        this(path, 1000);
+    }
+
     void put(String key, String value) throws IOException {
         wal.appendPut(key, value);
         memTable.put(key, value);
+
+        if (memTable.size() >= flushThreshold) {
+            flush();
+        }
     }
 
     void delete(String key) throws IOException {
         wal.appendDelete(key);
         memTable.delete(key);
+
+        if (memTable.size() >= flushThreshold) {
+            flush();
+        }
     }
 
     String get(String key) throws IOException {

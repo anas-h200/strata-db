@@ -209,4 +209,39 @@ public class StrataDbTest {
         assertTrue(Files.exists(tempDir.resolve("sstable-3.sst")));
         assertEquals(3, Files.list(tempDir).filter(p -> p.toString().endsWith(".sst")).count());
     }
+
+    @Test
+    void putFlushesAutomaticallyAtThreshold(@TempDir Path tempDir) throws IOException {
+        Path walPath = tempDir.resolve("wal.log");
+        StrataDb db = new StrataDb(walPath.toString(), 3);
+
+        db.put("ravi", "98xxx");
+        db.put("sam", "11xxx");
+        assertFalse(Files.exists(tempDir.resolve("sstable-1.sst")));
+
+        db.put("asha", "77xxx");
+        assertTrue(Files.exists(tempDir.resolve("sstable-1.sst")));
+        assertEquals(0, Files.size(walPath));
+
+        assertEquals("98xxx", db.get("ravi"));
+        assertEquals("11xxx", db.get("sam"));
+        assertEquals("77xxx", db.get("asha"));
+
+        db.close();
+    }
+
+    @Test
+    void deleteFlushesAutomaticallyAtThreshold(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString(), 3);
+
+        db.put("ravi", "98xxx");
+        db.put("sam", "11xxx");
+        db.delete("asha");
+
+        assertTrue(Files.exists(tempDir.resolve("sstable-1.sst")));
+        assertThrows(ResourceNotFoundException.class, () -> db.get("asha"));
+        assertEquals("98xxx", db.get("ravi"));
+
+        db.close();
+    }
 }
