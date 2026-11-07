@@ -186,4 +186,27 @@ public class StrataDbTest {
         assertEquals("11xxx", second.get("sam"));
         second.close();
     }
+
+    @Test
+    void flushPicksNextSSTableNumberEvenAfterRestart(@TempDir Path tempDir) throws IOException {
+        Path walPath = tempDir.resolve("wal.log");
+
+        StrataDb first = new StrataDb(walPath.toString());
+        first.put("ravi", "98xxx");
+        first.flush();
+        first.put("sam", "11xxx");
+        first.flush();
+        first.close();
+
+        assertTrue(Files.exists(tempDir.resolve("sstable-1.sst")));
+        assertTrue(Files.exists(tempDir.resolve("sstable-2.sst")));
+
+        StrataDb second = new StrataDb(walPath.toString());
+        second.put("asha", "77xxx");
+        second.flush();
+        second.close();
+
+        assertTrue(Files.exists(tempDir.resolve("sstable-3.sst")));
+        assertEquals(3, Files.list(tempDir).filter(p -> p.toString().endsWith(".sst")).count());
+    }
 }

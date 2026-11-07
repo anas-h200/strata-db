@@ -11,9 +11,12 @@ public class StrataDb {
     private final MemTable memTable;
     private final WriteAheadLog wal;
     private final List<String> sstPaths = new ArrayList<>();
+    private final Path dir;
+    private int nextSstNumber = 1;
 
     StrataDb(String path) throws IOException {
         this.memTable = new MemTable();
+        this.dir = Path.of(path).toAbsolutePath().getParent();
         loadSSTables(Path.of(path));
 
         if (Files.exists(Path.of(path))) {
@@ -65,6 +68,12 @@ public class StrataDb {
         wal.reset();
     }
 
+    void flush() throws IOException {
+        String sstPath = dir.resolve("sstable-" + nextSstNumber + ".sst").toString();
+        nextSstNumber++;
+        flush(sstPath);
+    }
+
     private static int ssTableNumber(Path p) {
         String name = p.getFileName().toString();
         String number = name.substring("sstable-".length(), name.length() - ".sst".length());
@@ -85,6 +94,10 @@ public class StrataDb {
 
         for (Path p: found) {
             sstPaths.add(p.toString());
+        }
+
+        if (!found.isEmpty()) {
+            nextSstNumber = ssTableNumber(found.get(0)) + 1;
         }
     }
 }
