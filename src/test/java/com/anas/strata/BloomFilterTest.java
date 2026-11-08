@@ -32,4 +32,22 @@ public class BloomFilterTest {
         }
     }
 
+    @Test
+    void mostMissingKeysAreRejected() {
+        BloomFilter filter = new BloomFilter(1000, 3);
+
+        for (int i=0; i<100; i++) {
+            filter.add("key"+i);
+        }
+
+        int falsePositives = 0;
+
+        for (int i=0; i<1000; i++) {
+            if (filter.mightContain("missing"+i)) {
+                falsePositives++;
+            }
+        }
+
+        assertTrue(falsePositives < 50);
+    }
 }
