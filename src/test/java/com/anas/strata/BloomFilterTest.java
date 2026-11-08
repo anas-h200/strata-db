@@ -19,5 +19,17 @@ public class BloomFilterTest {
         assertTrue(filter.mightContain("ravi"));
     }
 
+    @Test
+    void manyAddedKeysAreAllFound() {
+        BloomFilter filter = new BloomFilter(1000, 3);
+
+        for (int i=0; i<100; i++) {
+            filter.add("key"+i);
+        }
+
+        for (int i=0; i<100; i++) {
+            assertTrue(filter.mightContain("key"+i));
+        }
+    }
 
 }
