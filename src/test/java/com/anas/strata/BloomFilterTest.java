@@ -6,16 +6,18 @@ import static org.junit.jupiter.api.Assertions.*;
 public class BloomFilterTest {
     @Test
     void emptyFilterSaysDefinitelyNotForAnyKey() {
-        BloomFilter filter = new BloomFilter(100);
+        BloomFilter filter = new BloomFilter(100, 3);
 
         assertFalse(filter.mightContain("ravi"));
     }
 
     @Test
     void addedKeyIsAlwaysFound() {
-        BloomFilter filter = new BloomFilter(100);
+        BloomFilter filter = new BloomFilter(100, 3);
         filter.add("ravi");
 
         assertTrue(filter.mightContain("ravi"));
     }
+
+
 }
