@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SSTableReader {
     static MemTable.ValueEntry get(String path, String key) throws IOException {
@@ -30,6 +32,28 @@ public class SSTableReader {
                 else if (currentKey.compareTo(key) > 0) {
                     return null;
                 }
+            }
+        }
+    }
+
+    static List<String> readAllKeys(String path) throws IOException {
+        List<String> keys = new ArrayList<>();
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(path))) {
+            while (true) {
+                byte flag;
+                try {
+                    flag = in.readByte();
+                } catch (EOFException e) {
+                    return keys;
+                }
+
+                String currentKey = in.readUTF();
+                if (flag == 0) {
+                    in.readUTF();
+                }
+
+                keys.add(currentKey);
             }
         }
     }

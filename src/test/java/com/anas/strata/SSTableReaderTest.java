@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SSTableReaderTest {
@@ -25,5 +26,20 @@ public class SSTableReaderTest {
 
         assertNull(SSTableReader.get(path, "bob"));
         assertNull(SSTableReader.get(path, "zed"));
+    }
+
+    @Test
+    void readAllKeysReturnsEveryKeyIncludingTombstones(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+        memTable.put("sam", "11xxx");
+        memTable.put("asha", "77xxx");
+        memTable.put("ravi", "98xxx");
+        memTable.delete("ravi");
+
+        String path = tempDir.resolve("sstable-1.sst").toString();
+        SSTableWriter.write(path, memTable);
+
+        List<String> keys = SSTableReader.readAllKeys(path);
+        assertEquals(List.of("asha", "ravi", "sam"), keys);
     }
 }
