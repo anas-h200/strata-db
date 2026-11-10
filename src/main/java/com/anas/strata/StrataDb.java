@@ -5,12 +5,15 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StrataDb {
     private final MemTable memTable;
     private final WriteAheadLog wal;
     private final List<String> sstPaths = new ArrayList<>();
+    private final Map<String, BloomFilter> filters = new HashMap<>();
     private final Path dir;
     private int nextSstNumber = 1;
     private final int flushThreshold;
