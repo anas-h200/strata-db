@@ -114,4 +114,14 @@ public class StrataDb {
             nextSstNumber = ssTableNumber(found.get(0)) + 1;
         }
     }
+
+    private static BloomFilter buildFilter(List<String> keys) {
+        BloomFilter filter = new BloomFilter(Math.max(64, keys.size()*10), 3);
+
+        for (String key: keys) {
+            filter.add(key);
+        }
+
+        return filter;
+    }
 }
