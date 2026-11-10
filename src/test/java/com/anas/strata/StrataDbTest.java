@@ -244,4 +244,59 @@ public class StrataDbTest {
 
         db.close();
     }
+
+    @Test
+    void flushBuildsFilterContainingAllKeysIncludingTombstones(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("sam", "11xxx");
+        db.put("ravi", "98xxx");
+        db.put("asha", "77xxx");
+        db.delete("ravi");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db.flush(sstPath);
+
+        BloomFilter filter = db.filterFor(sstPath);
+        assertTrue(filter.mightContain("sam"));
+        assertTrue(filter.mightContain("asha"));
+        assertTrue(filter.mightContain("ravi"));
+        db.close();
+    }
+
+    @Test
+    void restartRebuildsFiltersForExistingSSTables(@TempDir Path tempDir) throws IOException {
+        StrataDb db1 = new StrataDb(tempDir.resolve("wal.log").toString());
+        db1.put("sam", "11xxx");
+        db1.put("ravi", "98xxx");
+        db1.put("asha", "77xxx");
+        db1.delete("ravi");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db1.flush(sstPath);
+        db1.close();
+
+        StrataDb db2 = new StrataDb(tempDir.resolve("wal.log").toString());
+        BloomFilter filter = db2.filterFor(sstPath);
+
+        assertNotNull(filter);
+        assertTrue(filter.mightContain("sam"));
+        assertTrue(filter.mightContain("ravi"));
+        assertTrue(filter.mightContain("asha"));
+        db2.close();
+    }
+
+    @Test
+    void getSkipsSSTableWhenFilterSaysDefinitelyNot(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("sam", "11xxx");
+        db.put("asha", "77xxx");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db.flush(sstPath);
+
+        assertFalse(db.filterFor(sstPath).mightContain("zara"));
+        Files.delete(Path.of(sstPath));
+        assertThrows(ResourceNotFoundException.class, () -> db.get("zara"));
+        db.close();
+    }
 }

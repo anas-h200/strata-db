@@ -5,12 +5,15 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StrataDb {
     private final MemTable memTable;
     private final WriteAheadLog wal;
     private final List<String> sstPaths = new ArrayList<>();
+    private final Map<String, BloomFilter> filters = new HashMap<>();
     private final Path dir;
     private int nextSstNumber = 1;
     private final int flushThreshold;
@@ -57,6 +60,11 @@ public class StrataDb {
 
         if (entry == null) {
             for (String path: sstPaths) {
+                BloomFilter filter = filters.get(path);
+                if (!filter.mightContain(key)) {
+                    continue;
+                }
+
                 entry = SSTableReader.get(path, key);
                 if (entry != null) {
                     break;
@@ -75,8 +83,19 @@ public class StrataDb {
         wal.close();
     }
 
+    BloomFilter filterFor(String sstPath) {
+        return filters.get(sstPath);
+    }
+
     void flush (String sstPath) throws IOException {
         SSTableWriter.write(sstPath, memTable);
+
+        List<String> keys = new ArrayList<>();
+        for (Map.Entry<String, MemTable.ValueEntry> entry: memTable.entries()) {
+            keys.add(entry.getKey());
+        }
+
+        filters.put(sstPath, buildFilter(keys));
         sstPaths.add(0, sstPath);
         memTable.clear();
         wal.reset();
@@ -107,11 +126,25 @@ public class StrataDb {
         found.sort((a, b) -> Integer.compare(ssTableNumber(b), ssTableNumber(a)));
 
         for (Path p: found) {
-            sstPaths.add(p.toString());
+            String sstPath = p.toString();
+            sstPaths.add(sstPath);
+
+            List<String> keys = SSTableReader.readAllKeys(sstPath);
+            filters.put(sstPath, buildFilter(keys));
         }
 
         if (!found.isEmpty()) {
             nextSstNumber = ssTableNumber(found.get(0)) + 1;
         }
+    }
+
+    private static BloomFilter buildFilter(List<String> keys) {
+        BloomFilter filter = new BloomFilter(Math.max(64, keys.size()*10), 3);
+
+        for (String key: keys) {
+            filter.add(key);
+        }
+
+        return filter;
     }
 }
