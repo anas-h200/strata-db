@@ -78,6 +78,10 @@ public class StrataDb {
         wal.close();
     }
 
+    BloomFilter filterFor(String sstPath) {
+        return filters.get(sstPath);
+    }
+
     void flush (String sstPath) throws IOException {
         SSTableWriter.write(sstPath, memTable);
 
@@ -87,7 +91,6 @@ public class StrataDb {
         }
 
         filters.put(sstPath, buildFilter(keys));
-
         sstPaths.add(0, sstPath);
         memTable.clear();
         wal.reset();

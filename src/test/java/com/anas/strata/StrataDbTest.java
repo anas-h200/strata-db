@@ -244,4 +244,22 @@ public class StrataDbTest {
 
         db.close();
     }
+
+    @Test
+    void flushBuildsFilterContainingAllKeysIncludingTombstones(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("sam", "11xxx");
+        db.put("ravi", "98xxx");
+        db.put("asha", "77xxx");
+        db.delete("ravi");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db.flush(sstPath);
+
+        BloomFilter filter = db.filterFor(sstPath);
+        assertTrue(filter.mightContain("sam"));
+        assertTrue(filter.mightContain("asha"));
+        assertTrue(filter.mightContain("ravi"));
+        db.close();
+    }
 }
