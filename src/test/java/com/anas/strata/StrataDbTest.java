@@ -284,4 +284,19 @@ public class StrataDbTest {
         assertTrue(filter.mightContain("asha"));
         db2.close();
     }
+
+    @Test
+    void getSkipsSSTableWhenFilterSaysDefinitelyNot(@TempDir Path tempDir) throws IOException {
+        StrataDb db = new StrataDb(tempDir.resolve("wal.log").toString());
+        db.put("sam", "11xxx");
+        db.put("asha", "77xxx");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db.flush(sstPath);
+
+        assertFalse(db.filterFor(sstPath).mightContain("zara"));
+        Files.delete(Path.of(sstPath));
+        assertThrows(ResourceNotFoundException.class, () -> db.get("zara"));
+        db.close();
+    }
 }
