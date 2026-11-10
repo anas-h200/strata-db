@@ -60,6 +60,11 @@ public class StrataDb {
 
         if (entry == null) {
             for (String path: sstPaths) {
+                BloomFilter filter = filters.get(path);
+                if (!filter.mightContain(key)) {
+                    continue;
+                }
+
                 entry = SSTableReader.get(path, key);
                 if (entry != null) {
                     break;
