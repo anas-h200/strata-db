@@ -121,7 +121,11 @@ public class StrataDb {
         found.sort((a, b) -> Integer.compare(ssTableNumber(b), ssTableNumber(a)));
 
         for (Path p: found) {
-            sstPaths.add(p.toString());
+            String sstPath = p.toString();
+            sstPaths.add(sstPath);
+
+            List<String> keys = SSTableReader.readAllKeys(sstPath);
+            filters.put(sstPath, buildFilter(keys));
         }
 
         if (!found.isEmpty()) {
