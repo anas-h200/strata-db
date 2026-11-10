@@ -262,4 +262,26 @@ public class StrataDbTest {
         assertTrue(filter.mightContain("ravi"));
         db.close();
     }
+
+    @Test
+    void restartRebuildsFiltersForExistingSSTables(@TempDir Path tempDir) throws IOException {
+        StrataDb db1 = new StrataDb(tempDir.resolve("wal.log").toString());
+        db1.put("sam", "11xxx");
+        db1.put("ravi", "98xxx");
+        db1.put("asha", "77xxx");
+        db1.delete("ravi");
+
+        String sstPath = tempDir.resolve("sstable-1.sst").toString();
+        db1.flush(sstPath);
+        db1.close();
+
+        StrataDb db2 = new StrataDb(tempDir.resolve("wal.log").toString());
+        BloomFilter filter = db2.filterFor(sstPath);
+
+        assertNotNull(filter);
+        assertTrue(filter.mightContain("sam"));
+        assertTrue(filter.mightContain("ravi"));
+        assertTrue(filter.mightContain("asha"));
+        db2.close();
+    }
 }
