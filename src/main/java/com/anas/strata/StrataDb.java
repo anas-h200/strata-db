@@ -80,6 +80,14 @@ public class StrataDb {
 
     void flush (String sstPath) throws IOException {
         SSTableWriter.write(sstPath, memTable);
+
+        List<String> keys = new ArrayList<>();
+        for (Map.Entry<String, MemTable.ValueEntry> entry: memTable.entries()) {
+            keys.add(entry.getKey());
+        }
+
+        filters.put(sstPath, buildFilter(keys));
+
         sstPaths.add(0, sstPath);
         memTable.clear();
         wal.reset();
