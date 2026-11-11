@@ -36,4 +36,22 @@ public class SSTableWriterTest {
             assertEquals(-1, in.read());
         }
     }
+
+    @Test
+    void writerIndexesEveryNthRecord(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+
+        for (int i = 0; i < 33; i++) {
+            memTable.put(String.format("k%02d", i), "v");
+        }
+
+        Path sstPath = tempDir.resolve("sstable-1.sst");
+        SSTableIndex index = SSTableWriter.write(sstPath.toString(), memTable);
+
+
+        assertEquals(0, index.floorOffset("k00"));
+        assertEquals(144, index.floorOffset("k16"));
+        assertEquals(144, index.floorOffset("k20"));
+        assertEquals(288, index.floorOffset("k32"));
+    }
 }
