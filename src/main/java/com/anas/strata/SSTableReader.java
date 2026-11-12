@@ -9,7 +9,13 @@ import java.util.List;
 
 public class SSTableReader {
     static MemTable.ValueEntry get(String path, String key) throws IOException {
-        try (DataInputStream in = new DataInputStream(new FileInputStream(path))) {
+        return get(path, key, 0);
+    }
+
+    static MemTable.ValueEntry get(String path, String key, long startOffset) throws IOException {
+        try (FileInputStream fis = new FileInputStream(path);
+             DataInputStream in = new DataInputStream(fis)) {
+            fis.getChannel().position(startOffset);
             while (true) {
                 byte flag;
 
