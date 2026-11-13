@@ -299,4 +299,37 @@ public class StrataDbTest {
         assertThrows(ResourceNotFoundException.class, () -> db.get("zara"));
         db.close();
     }
+
+    @Test
+    void getUsesIndexBeforeAndAfterRestart(@TempDir Path tempDir) throws IOException {
+        Path walPath = tempDir.resolve("wal.log");
+        StrataDb db = new StrataDb(walPath.toString(), 40);
+
+        for (int i=0; i<40; i++){
+            db.put(String.format("k%02d", i), "v" + i);
+        }
+
+        assertTrue(Files.exists(tempDir.resolve("sstable-1.sst")));
+        assertFalse(Files.exists(tempDir.resolve("sstable-2.sst")));
+
+        for (int i=0; i<40; i++) {
+            String key = String.format("k%02d", i);
+            assertEquals("v" + i, db.get(key));
+        }
+
+        assertThrows(ResourceNotFoundException.class, () -> db.get("k05x"));
+
+        db.close();
+
+        StrataDb restarted = new StrataDb(walPath.toString(), 40);
+
+        for (int i=0; i<40; i++) {
+            String key = String.format("k%02d", i);
+            assertEquals("v" + i, restarted.get(key));
+        }
+
+        assertThrows(ResourceNotFoundException.class, () -> restarted.get("k05x"));
+
+        restarted.close();
+    }
 }
