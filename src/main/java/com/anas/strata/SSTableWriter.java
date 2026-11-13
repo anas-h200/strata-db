@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class SSTableWriter {
-    private static final int INDEX_INTERVAL = 16;
+    static final int INDEX_INTERVAL = 16;
 
     static SSTableIndex write(String path, MemTable memTable) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(path);
