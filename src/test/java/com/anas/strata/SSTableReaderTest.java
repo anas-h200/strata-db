@@ -42,4 +42,38 @@ public class SSTableReaderTest {
         List<String> keys = SSTableReader.readAllKeys(path);
         assertEquals(List.of("asha", "ravi", "sam"), keys);
     }
+
+    @Test
+    void getFromOffsetStartsReadingThere(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+
+        for (int i=0; i<33; i++) {
+            memTable.put(String.format("k%02d", i), "v");
+        }
+
+        String path = tempDir.resolve("sstable-1.sst").toString();
+        SSTableIndex index = SSTableWriter.write(path, memTable);
+
+        assertNotNull(SSTableReader.get(path, "k20", index.floorOffset("k20")));
+        assertEquals("v", SSTableReader.get(path, "k20", 144).value());
+        assertNull(SSTableReader.get(path, "k05", 144));
+    }
+
+    @Test
+    void buildIndexMatchesIndexFromWriter(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+
+        for (int i=0; i<33; i++) {
+            memTable.put(String.format("k%02d", i), "v");
+        }
+
+        String path = tempDir.resolve("sstable-1.sst").toString();
+        SSTableIndex fromWriter =SSTableWriter.write(path, memTable);
+        SSTableIndex rebuilt = SSTableReader.buildIndex(path);
+
+        for (int i=0; i<33; i++) {
+            String key = String.format("k%02d", i);
+            assertEquals(rebuilt.floorOffset(key), fromWriter.floorOffset(key));
+        }
+    }
 }

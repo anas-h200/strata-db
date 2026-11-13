@@ -9,7 +9,13 @@ import java.util.List;
 
 public class SSTableReader {
     static MemTable.ValueEntry get(String path, String key) throws IOException {
-        try (DataInputStream in = new DataInputStream(new FileInputStream(path))) {
+        return get(path, key, 0);
+    }
+
+    static MemTable.ValueEntry get(String path, String key, long startOffset) throws IOException {
+        try (FileInputStream fis = new FileInputStream(path);
+             DataInputStream in = new DataInputStream(fis)) {
+            fis.getChannel().position(startOffset);
             while (true) {
                 byte flag;
 
@@ -54,6 +60,36 @@ public class SSTableReader {
                 }
 
                 keys.add(currentKey);
+            }
+        }
+    }
+
+    static SSTableIndex buildIndex(String path) throws IOException {
+        SSTableIndex index = new SSTableIndex();
+        int count = 0;
+
+        try (FileInputStream fis = new FileInputStream(path);
+        DataInputStream in = new DataInputStream(fis)) {
+            while (true) {
+                long currentOffset = fis.getChannel().position();
+
+                byte flag;
+                try {
+                    flag = in.readByte();
+                } catch (EOFException e) {
+                    return index;
+                }
+
+                String key = in.readUTF();
+                if (flag == 0) {
+                    in.readUTF();
+                }
+
+                if (count % SSTableWriter.INDEX_INTERVAL == 0) {
+                    index.add(key, currentOffset);
+                }
+
+                count++;
             }
         }
     }
