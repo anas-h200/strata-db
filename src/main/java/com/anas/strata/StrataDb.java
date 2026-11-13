@@ -66,7 +66,8 @@ public class StrataDb {
                     continue;
                 }
 
-                entry = SSTableReader.get(path, key);
+                long startOffset = indexes.get(path).floorOffset(key);
+                entry = SSTableReader.get(path, key, startOffset);
                 if (entry != null) {
                     break;
                 }
