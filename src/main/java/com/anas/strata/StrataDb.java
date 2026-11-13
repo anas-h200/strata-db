@@ -14,6 +14,7 @@ public class StrataDb {
     private final WriteAheadLog wal;
     private final List<String> sstPaths = new ArrayList<>();
     private final Map<String, BloomFilter> filters = new HashMap<>();
+    private final Map<String, SSTableIndex> indexes = new HashMap<>();
     private final Path dir;
     private int nextSstNumber = 1;
     private final int flushThreshold;
@@ -88,7 +89,8 @@ public class StrataDb {
     }
 
     void flush (String sstPath) throws IOException {
-        SSTableWriter.write(sstPath, memTable);
+        SSTableIndex index = SSTableWriter.write(sstPath, memTable);
+        indexes.put(sstPath, index);
 
         List<String> keys = new ArrayList<>();
         for (Map.Entry<String, MemTable.ValueEntry> entry: memTable.entries()) {
