@@ -8,6 +8,15 @@ import java.util.Map;
 public class SSTableWriter {
     static final int INDEX_INTERVAL = 16;
 
+    private static void writeRecord(DataOutputStream dos, String key, MemTable.ValueEntry entry) throws IOException {
+        dos.writeByte(entry.deleted() ? 1 : 0);
+        dos.writeUTF(key);
+
+        if (!entry.deleted()) {
+            dos.writeUTF(entry.value());
+        }
+    }
+
     static SSTableIndex write(String path, MemTable memTable) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(path);
              DataOutputStream dos = new DataOutputStream(fos)) {
@@ -20,12 +29,7 @@ public class SSTableWriter {
                     index.add(entry.getKey(), dos.size());
                 }
 
-                dos.writeByte(entry.getValue().deleted() ? 1 : 0);
-                dos.writeUTF(entry.getKey());
-
-                if (!entry.getValue().deleted()) {
-                    dos.writeUTF(entry.getValue().value());
-                }
+                writeRecord(dos, entry.getKey(), entry.getValue());
 
                 count++;
             }
