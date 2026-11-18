@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.nio.file.DirectoryStream;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -331,5 +334,56 @@ public class StrataDbTest {
         assertThrows(ResourceNotFoundException.class, () -> restarted.get("k05x"));
 
         restarted.close();
+    }
+
+    @Test
+    void compactionPreservesEveryGet(@TempDir Path tempDir) throws IOException {
+        String walPath = tempDir.resolve("wal.log").toString();
+        StrataDb db = new StrataDb(walPath, 2);
+
+        db.put("a", "1");
+        db.put("b", "1");
+        db.put("a", "2");
+        db.put("c", "1");
+        db.delete("b");
+        db.put("d", "1");
+        db.put("e", "1");
+
+        List<String> expected = List.of("a=2", "b=MISSING", "c=1", "d=1", "e=1", "f=MISSING");
+
+        assertEquals(3, countSstFiles(tempDir));
+        assertEquals(expected, snapshot(db));
+
+        db.compact();
+
+        assertEquals(1, countSstFiles(tempDir));
+        assertEquals(expected, snapshot(db));
+
+        db.close();
+        StrataDb reopened = new StrataDb(walPath, 2);
+        assertEquals(expected, snapshot(reopened));
+        reopened.close();
+    }
+
+    private List<String> snapshot(StrataDb db) throws IOException {
+        List<String> result = new ArrayList<>();
+        for (String key : List.of("a", "b", "c", "d", "e", "f")) {
+            try {
+                result.add(key + "=" + db.get(key));
+            } catch (ResourceNotFoundException e) {
+                result.add(key + "=MISSING");
+            }
+        }
+        return result;
+    }
+
+    private int countSstFiles(Path dir) throws IOException {
+        int count = 0;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "sstable-*.sst")) {
+            for (Path p : stream) {
+                count++;
+            }
+        }
+        return count;
     }
 }

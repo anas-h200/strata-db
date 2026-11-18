@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -150,5 +151,45 @@ public class StrataDb {
         }
 
         return filter;
+    }
+
+    void compact() throws IOException {
+        if (sstPaths.size() < 2) {
+            return;
+        }
+
+        String finalPath = dir.resolve("sstable-" + nextSstNumber + ".sst").toString();
+        nextSstNumber++;
+        String tempPath = finalPath + ".tmp";
+
+        List<SSTableScanner> inputs = new ArrayList<>();
+        for (String path: sstPaths) {
+            inputs.add(new SSTableScanner(path));
+        }
+
+        SSTableWriter.WriteResult result;
+
+        try (MergingScanner merged = new MergingScanner(inputs)) {
+            result = SSTableWriter.write(tempPath, merged, true);
+        }
+
+        Files.move(Path.of(tempPath), Path.of(finalPath), StandardCopyOption.ATOMIC_MOVE);
+
+        List<String> oldPaths = new ArrayList<>(sstPaths);
+
+        for (String old: oldPaths) {
+            filters.remove(old);
+            indexes.remove(old);
+        }
+
+        sstPaths.clear();
+
+        filters.put(finalPath, buildFilter(result.keys()));
+        indexes.put(finalPath, result.index());
+        sstPaths.add(finalPath);
+
+        for (int i=oldPaths.size()-1; i>=0; i--) {
+            Files.deleteIfExists(Path.of(oldPaths.get(i)));
+        }
     }
 }
