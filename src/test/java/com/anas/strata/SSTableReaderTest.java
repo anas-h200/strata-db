@@ -76,4 +76,27 @@ public class SSTableReaderTest {
             assertEquals(rebuilt.floorOffset(key), fromWriter.floorOffset(key));
         }
     }
+
+    @Test
+    void summarizeMatchesReadAllKeysAndBuildIndex(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+        for (int i = 0; i < 33; i++) {
+            memTable.put(String.format("k%02d", i), "v");
+        }
+        memTable.delete("k05");
+
+        String path = tempDir.resolve("test.sst").toString();
+        SSTableWriter.write(path, memTable);
+
+        SSTableReader.SSTableSummary summary = SSTableReader.summarize(path);
+        SSTableIndex oldIndex = SSTableReader.buildIndex(path);
+
+        assertEquals(SSTableReader.readAllKeys(path), summary.keys());
+        assertEquals(33, summary.keys().size());
+
+        for (int i = 0; i < 33; i++) {
+            String key = String.format("k%02d", i);
+            assertEquals(oldIndex.floorOffset(key), summary.index().floorOffset(key));
+        }
+    }
 }
