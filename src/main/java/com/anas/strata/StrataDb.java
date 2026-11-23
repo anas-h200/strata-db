@@ -133,9 +133,9 @@ public class StrataDb {
             String sstPath = p.toString();
             sstPaths.add(sstPath);
 
-            List<String> keys = SSTableReader.readAllKeys(sstPath);
-            filters.put(sstPath, buildFilter(keys));
-            indexes.put(sstPath, SSTableReader.buildIndex(sstPath));
+            SSTableReader.SSTableSummary summary = SSTableReader.summarize(sstPath);
+            filters.put(sstPath, buildFilter(summary.keys()));
+            indexes.put(sstPath, summary.index());
         }
 
         if (!found.isEmpty()) {

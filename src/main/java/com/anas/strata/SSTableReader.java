@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SSTableReader {
+    record SSTableSummary(List<String> keys, SSTableIndex index) {}
+
     static MemTable.ValueEntry get(String path, String key) throws IOException {
         return get(path, key, 0);
     }
@@ -92,5 +94,23 @@ public class SSTableReader {
                 count++;
             }
         }
+    }
+
+    static SSTableSummary summarize(String path) throws IOException {
+        List<String> keys = new ArrayList<>();
+        SSTableIndex index = new SSTableIndex();
+        int count = 0;
+
+        try (SSTableScanner scanner = new SSTableScanner(path)) {
+            while (scanner.next()) {
+                if (count % SSTableWriter.INDEX_INTERVAL == 0) {
+                    index.add(scanner.key(), scanner.offset());
+                }
+                keys.add(scanner.key());
+                count++;
+            }
+        }
+
+        return new SSTableSummary(keys, index);
     }
 }

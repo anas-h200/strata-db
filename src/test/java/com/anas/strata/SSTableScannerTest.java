@@ -46,4 +46,24 @@ public class SSTableScannerTest {
 
         assertEquals(List.of("asha", "ravi", "sam"), keys);
     }
+
+    @Test
+    void offsetReportsWhereEachRecordStarts(@TempDir Path tempDir) throws IOException {
+        MemTable memTable = new MemTable();
+        for (int i = 0; i < 33; i++) {
+            memTable.put(String.format("k%02d", i), "v");
+        }
+
+        String path = tempDir.resolve("test.sst").toString();
+        SSTableWriter.write(path, memTable);
+
+        try (SSTableScanner scanner = new SSTableScanner(path)) {
+            int n = 0;
+            while (scanner.next()) {
+                assertEquals(n * 9L, scanner.offset());
+                n++;
+            }
+            assertEquals(33, n);
+        }
+    }
 }
