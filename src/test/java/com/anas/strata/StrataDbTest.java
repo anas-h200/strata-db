@@ -386,4 +386,31 @@ public class StrataDbTest {
         }
         return count;
     }
+
+    @Test
+    void reopenAfterFlushStillFindsEveryKey(@TempDir Path tempDir) throws IOException {
+        String walPath = tempDir.resolve("wal.log").toString();
+        StrataDb db = new StrataDb(walPath, 1000);
+
+        for (int i = 0; i < 40; i++) {
+            db.put(String.format("k%02d", i), "v" + i);
+        }
+        db.delete("k05");
+        db.flush();
+        db.close();
+
+        StrataDb reopened = new StrataDb(walPath, 1000);
+
+        for (int i = 0; i < 40; i++) {
+            String key = String.format("k%02d", i);
+            if (i == 5) {
+                assertThrows(ResourceNotFoundException.class, () -> reopened.get(key));
+            } else {
+                assertEquals("v" + i, reopened.get(key));
+            }
+        }
+        assertThrows(ResourceNotFoundException.class, () -> reopened.get("zzz"));
+
+        reopened.close();
+    }
 }
