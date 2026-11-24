@@ -413,4 +413,47 @@ public class StrataDbTest {
 
         reopened.close();
     }
+
+    @Test
+    void compactionTriggersAutomaticallyAtThreshold(@TempDir Path tempDir) throws IOException {
+        String walPath = tempDir.resolve("wal.log").toString();
+        StrataDb db = new StrataDb(walPath, 2, 3);
+
+        db.put("a", "1");
+        db.put("b", "1");      // flush 1
+        db.put("a", "2");
+        db.put("c", "1");      // flush 2
+        assertEquals(2, countSstFiles(tempDir));
+
+        db.delete("b");
+        db.put("d", "1");      // flush 3 -> compaction runs
+        assertEquals(1, countSstFiles(tempDir));
+
+        List<String> expected = List.of("a=2", "b=MISSING", "c=1", "d=1", "e=MISSING", "f=MISSING");
+        assertEquals(expected, snapshot(db));
+
+        db.close();
+        StrataDb reopened = new StrataDb(walPath, 2, 3);
+        assertEquals(expected, snapshot(reopened));
+        reopened.close();
+    }
+
+    @Test
+    void compactionIsOffByDefault(@TempDir Path tempDir) throws IOException {
+        String walPath = tempDir.resolve("wal.log").toString();
+        StrataDb db = new StrataDb(walPath, 2);
+
+        db.put("a", "1");
+        db.put("b", "2");       // flush 1
+        db.put("c", "3");
+        db.put("d", "4");       // flush 2
+        db.put("e", "5");
+        db.put("f", "6");       // flush 3
+        db.put("g", "7");
+        db.put("h", "8");       // flush 4
+
+        assertEquals(4, countSstFiles(tempDir));
+
+        db.close();
+    }
 }
