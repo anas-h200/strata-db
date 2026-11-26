@@ -19,9 +19,11 @@ public class StrataDb {
     private final Path dir;
     private int nextSstNumber = 1;
     private final int flushThreshold;
+    private final int compactionThreshold;
 
-    StrataDb(String path, int flushThreshold) throws IOException {
+    StrataDb(String path, int flushThreshold, int compactionThreshold) throws IOException {
         this.flushThreshold = flushThreshold;
+        this.compactionThreshold = compactionThreshold;
         this.memTable = new MemTable();
         this.dir = Path.of(path).toAbsolutePath().getParent();
         loadSSTables(Path.of(path));
@@ -33,6 +35,10 @@ public class StrataDb {
         }
 
         this.wal = new WriteAheadLog(path);
+    }
+
+    StrataDb(String path, int flushThreshold) throws IOException {
+        this(path, flushThreshold, Integer.MAX_VALUE);
     }
 
     StrataDb(String path) throws IOException {
@@ -109,6 +115,10 @@ public class StrataDb {
         String sstPath = dir.resolve("sstable-" + nextSstNumber + ".sst").toString();
         nextSstNumber++;
         flush(sstPath);
+
+        if (sstPaths.size() >= compactionThreshold) {
+            compact();
+        }
     }
 
     private static int ssTableNumber(Path p) {
